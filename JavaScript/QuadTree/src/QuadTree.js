@@ -110,26 +110,26 @@ QuadTree.prototype.retrieve = function(item)
 {
 	//get a copy of the array of items
 	var out = this.root.retrieve(item).slice(0);
-	//return QuadTree._filterResults(out, {x:item.x, y:item.y, width:0, height:0});
+	//return QuadTree._filterResults(this.root instanceof BoundsNode, out, {x:item.x, y:item.y, width:0, height:0});
 	return out;
 }
 
 QuadTree.prototype.retrieveInBounds = function (bounds)
 {
 	var treeResult = this.root.retrieveInBounds(bounds);
-	return QuadTree._filterResults(treeResult, bounds);
+	return QuadTree._filterResults(this.root instanceof BoundsNode, treeResult, bounds);
 }
 
-QuadTree._filterResults = function(treeResult, bounds)
+QuadTree._filterResults = function(isBoundsNode, treeResult, bounds)
 {
 	var filteredResult = [];
 
-	if(this.root instanceof BoundsNode)
+	if(isBoundsNode)
 	{
 		for (var i=0; i < treeResult.length; i++)
 		{
 			var node = treeResult[i];
-			if (QuadTree._isBoundOverlappingBound(node, bounds))
+			if (QuadTree._boundsOverlap(node, bounds))
 			{
 				filteredResult.push(node);
 			}
@@ -161,7 +161,7 @@ QuadTree._isPointInsideBounds = function (point, bounds)
 }
 
 
-QuadTree._isBoundOverlappingBound = function (b1, b2)
+QuadTree._boundsOverlap = function (b1, b2)
 {
 	return !(
 	        b1.x > (b2.x + b2.width)  || 
@@ -288,15 +288,7 @@ Node.prototype.retrieveInBounds = function(bounds)
 
 Node.prototype.collidesWith = function (bounds)
 {
-	var b1 = this._bounds;
-	var b2 = bounds;
-
-	return !(
-	        b1.x > (b2.x + b2.width)  || 
-			b2.x > (b1.x + b1.width)  || 
-	        b1.y > (b2.y + b2.height) ||
-	        b2.y > (b1.y + b1.height)
-	   );
+	return QuadTree._boundsOverlap(this._bounds, bounds);
 }
 
 Node.prototype._findIndex = function(item)
