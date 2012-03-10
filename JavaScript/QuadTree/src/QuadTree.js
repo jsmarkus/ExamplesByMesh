@@ -391,6 +391,11 @@ Node.prototype.clear = function()
 	this.nodes.length = 0;
 }
 
+Node.prototype.getChildren = function()
+{
+	return this.children;
+}
+
 
 /******************** BoundsQuadTree ****************/
 

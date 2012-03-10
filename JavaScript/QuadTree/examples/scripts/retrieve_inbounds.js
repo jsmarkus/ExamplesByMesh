@@ -28,6 +28,13 @@ var stage;
 var shape;
 var drawColor;
 var pointShape;
+var mode;
+var modes = {pointMode : 1, boundsMode : 2};
+
+var isDragging;
+var dragStartX, dragStartY;
+var dragEndX, dragEndY;
+var dragPoints;
 
 function init()
 {
@@ -44,6 +51,8 @@ function init()
 	//page
 	canvas.onselectstart = function () { return false; }
 	
+	mode = document.getElementById('pointMode').checked ? modes.pointMode : modes.boundsMode;
+	
 	stage = new Stage(canvas);
 	shape = new Shape();
 	pointShape = new Shape();
@@ -53,13 +62,19 @@ function init()
 	drawColor = Graphics.getRGB(0,0,0);
 
 	stage.onMouseDown = onMouseDown;
+	stage.onMouseMove = null;
+	stage.onMouseUp = null;
+	isDragging = false;
 	
-	quad = new QuadTree({
-		x:0,
-		y:0,
-		width:canvas.width,
-		height:canvas.height
-	});
+	quad = new QuadTree(
+		{
+			x:0,
+			y:0,
+			width:canvas.width,
+			height:canvas.height
+		},
+		mode == modes.pointMode
+		);
 	
 	initPoints();
 	renderQuad();
@@ -74,31 +89,37 @@ function initPoints()
 	{
 		x = Math.random() * canvas.width;
 		y = Math.random() * canvas.height;
+
+		if (mode == modes.pointMode)
+		{
+			quad.insert({
+				x:x, 
+				y:y});
+		}
+		else
+		{
 		
-		//make sure our items dont outside of the top bounds
-		//or else we have to end up doing extra checks
-		if(x + w > canvas.width)
-		{
-			x = canvas.width - w - 2;
-		}
+			//make sure our items dont outside of the top bounds
+			//or else we have to end up doing extra checks
+			if(x + w > canvas.width)
+			{
+				x = canvas.width - w - 2;
+			}
 
-		if(y + h > canvas.height)
-		{
-			y = canvas.height - h - 2;
+			if(y + h > canvas.height)
+			{
+				y = canvas.height - h - 2;
+			}
+			
+			quad.insert({
+				x:x, 
+				y:y,
+				width:w,
+				height:h});
 		}
-
-		quad.insert({
-			x:x, 
-			y:y,
-			width:w,
-			height:h});
 	}
 }
 
-var isDragging = false;
-var dragStartX, dragStartY;
-var dragEndX, dragEndY;
-var dragPoints;
 function onMouseDown(e)
 {
 	if (!isDragging)
@@ -123,6 +144,8 @@ function onMouseDown(e)
 	dragPoints = quad.retrieveInBounds(bounds);
 	
 	renderPoints(dragPoints, bounds);
+	
+	return preventDefaultEventAction(e);
 }
 
 function onMouseUp(e)
@@ -130,8 +153,19 @@ function onMouseUp(e)
 	isDragging = false;
 	stage.onMouseMove = null;
 	stage.onMouseUp = null;
+	
+	return preventDefaultEventAction(e);
 }
 
+function preventDefaultEventAction(e)
+{
+	if (e.preventDefault) e.preventDefault();
+	if (e.stopPropagation) e.stopPropagation();
+	e.cancelBubble = true;
+	e.returnValue = false;
+	return false;
+}
+	
 function renderPoints(points, bounds)
 {
 	var len = points.length;
@@ -149,8 +183,17 @@ function renderPoints(points, bounds)
 		point = points[i];
 		g.beginStroke(drawColor);
 		g.beginFill("#FF0000");
-		g.drawRect(point.x, point.y, point.width, point.height);
-		//g.drawCircle(point.x, point.y,3);
+
+		if (mode == modes.pointMode)
+		{
+			g.drawCircle(point.x, point.y,3);
+		}
+		else
+		{
+			g.drawRect(point.x, point.y, point.width, point.height);
+		}
+
+
 	}
 	
 	stage.update();
@@ -185,10 +228,16 @@ function drawNode(node)
 		{
 			childNode = children[j];
 			g.beginStroke(drawColor);
-			
-			//draw rect
-			g.drawRect(childNode.x, childNode.y, childNode.width, childNode.height);
-			//g.drawCircle(childNode.x, childNode.y,3);
+
+			if (mode == modes.pointMode)
+			{
+				g.drawCircle(childNode.x, childNode.y,3);
+			}
+			else
+			{
+				g.drawRect(childNode.x, childNode.y, childNode.width, childNode.height);
+			}
+		
 		}
 	}
 	
