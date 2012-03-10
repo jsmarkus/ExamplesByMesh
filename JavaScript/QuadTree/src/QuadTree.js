@@ -263,7 +263,8 @@ Node.prototype.retrieveInBounds = function(bounds)
 
 	if(this.collidesWith(bounds))
 	{
-		result = result.concat(this._stuckChildren);
+		if (this._stuckChildren && this._stuckChildren.length)
+			result = result.concat(this._stuckChildren);
 		
 		if(this.children.length)
 		{
