@@ -110,47 +110,43 @@ QuadTree.prototype.retrieve = function(item)
 {
 	//get a copy of the array of items
 	var out = this.root.retrieve(item).slice(0);
-	//return QuadTree._filterResults(this.root instanceof BoundsNode, out, {x:item.x, y:item.y, width:0, height:0});
+	//return QuadTree._filterResults(out, {x:item.x, y:item.y, width:0, height:0});
 	return out;
 }
 
+/**
+* Retrieves all items / points overlapping, or within the specified bounds.
+* @method retrieveInBounds
+* @param {Object} bounds An object representing a shape with dimensions (x, y, width, height) properties.
+**/
 QuadTree.prototype.retrieveInBounds = function (bounds)
 {
 	var treeResult = this.root.retrieveInBounds(bounds);
-	return QuadTree._filterResults(this.root instanceof BoundsNode, treeResult, bounds);
+	return this._filterResults(treeResult, bounds);
 }
 
-QuadTree._filterResults = function(isBoundsNode, treeResult, bounds)
+// Returns only the results that are within or overlap the bounds
+QuadTree.prototype._filterResults = function(results, bounds)
 {
-	var filteredResult = [];
+	var filteredResults = [];
 
-	if(isBoundsNode)
+	var isBoundsQuadTree = this.root instanceof BoundsNode;
+	var funcIsInBound = isBoundsQuadTree ? QuadTree._boundsOverlap : QuadTree._pointInside;
+
+	for (var i=0; i < results.length; i++)
 	{
-		for (var i=0; i < treeResult.length; i++)
+		var result = results[i];
+		if (funcIsInBound(result, bounds))
 		{
-			var node = treeResult[i];
-			if (QuadTree._boundsOverlap(node, bounds))
-			{
-				filteredResult.push(node);
-			}
-		}
-	}
-	else
-	{
-		for (var i=0; i < treeResult.length; i++)
-		{
-			var node = treeResult[i];
-			if(QuadTree._isPointInsideBounds(node, bounds))
-			{
-				filteredResult.push(node);
-			}
+			filteredResults.push(result);
 		}
 	}
 
-	return filteredResult;
+	return filteredResults;
 }
 
-QuadTree._isPointInsideBounds = function (point, bounds)
+// Returns true if the point is inside the bounds 
+QuadTree._pointInside = function (point, bounds)
 {
 	return (
 		(point.x >= bounds.x) &&
@@ -160,7 +156,7 @@ QuadTree._isPointInsideBounds = function (point, bounds)
 	);
 }
 
-
+// Returns true if the bounds are overlapping
 QuadTree._boundsOverlap = function (b1, b2)
 {
 	return !(
@@ -270,15 +266,10 @@ Node.prototype.retrieveInBounds = function(bounds)
 		{
 			result = result.concat(this.children);
 		}
-		else
+
+		for (var i = 0; i < this.nodes.length; i++)
 		{
-			if(this.nodes.length)
-			{
-				for (var i = 0; i < this.nodes.length; i++)
-				{
-					result = result.concat(this.nodes[i].retrieveInBounds(bounds));
-				}
-			}
+			result = result.concat(this.nodes[i].retrieveInBounds(bounds));
 		}
 	}
 	
