@@ -144,8 +144,6 @@ function onMouseDown(e)
 	dragPoints = quad.retrieveInBounds(bounds);
 	
 	renderPoints(dragPoints, bounds);
-	
-	return preventDefaultEventAction(e);
 }
 
 function onMouseUp(e)
@@ -153,18 +151,8 @@ function onMouseUp(e)
 	isDragging = false;
 	stage.onMouseMove = null;
 	stage.onMouseUp = null;
-	
-	return preventDefaultEventAction(e);
 }
 
-function preventDefaultEventAction(e)
-{
-	if (e.preventDefault) e.preventDefault();
-	if (e.stopPropagation) e.stopPropagation();
-	e.cancelBubble = true;
-	e.returnValue = false;
-	return false;
-}
 	
 function renderPoints(points, bounds)
 {
