@@ -114,43 +114,39 @@ QuadTree.prototype.retrieve = function(item)
 	return out;
 }
 
+/**
+* Retrieves all items / points overlapping, or within the specified bounds.
+* @method retrieveInBounds
+* @param {Object} bounds An object representing a shape with dimensions (x, y, width, height) properties.
+**/
 QuadTree.prototype.retrieveInBounds = function (bounds)
 {
 	var treeResult = this.root.retrieveInBounds(bounds);
-	return QuadTree._filterResults(treeResult, bounds);
+	return this._filterResults(treeResult, bounds);
 }
 
-QuadTree._filterResults = function(treeResult, bounds)
+// Returns only the results that are within or overlap the bounds
+QuadTree.prototype._filterResults = function(results, bounds)
 {
-	var filteredResult = [];
+	var filteredResults = [];
 
-	if(this.root instanceof BoundsNode)
+	var isBoundsQuadTree = this.root instanceof BoundsNode;
+	var funcIsInBound = isBoundsQuadTree ? QuadTree._boundsOverlap : QuadTree._pointInside;
+
+	for (var i=0; i < results.length; i++)
 	{
-		for (var i=0; i < treeResult.length; i++)
+		var result = results[i];
+		if (funcIsInBound(result, bounds))
 		{
-			var node = treeResult[i];
-			if (QuadTree._isBoundOverlappingBound(node, bounds))
-			{
-				filteredResult.push(node);
-			}
-		}
-	}
-	else
-	{
-		for (var i=0; i < treeResult.length; i++)
-		{
-			var node = treeResult[i];
-			if(QuadTree._isPointInsideBounds(node, bounds))
-			{
-				filteredResult.push(node);
-			}
+			filteredResults.push(result);
 		}
 	}
 
-	return filteredResult;
+	return filteredResults;
 }
 
-QuadTree._isPointInsideBounds = function (point, bounds)
+// Returns true if the point is inside the bounds 
+QuadTree._pointInside = function (point, bounds)
 {
 	return (
 		(point.x >= bounds.x) &&
@@ -160,8 +156,8 @@ QuadTree._isPointInsideBounds = function (point, bounds)
 	);
 }
 
-
-QuadTree._isBoundOverlappingBound = function (b1, b2)
+// Returns true if the bounds are overlapping
+QuadTree._boundsOverlap = function (b1, b2)
 {
 	return !(
 	        b1.x > (b2.x + b2.width)  || 
@@ -263,21 +259,17 @@ Node.prototype.retrieveInBounds = function(bounds)
 
 	if(this.collidesWith(bounds))
 	{
-		result = result.concat(this._stuckChildren);
+		if (this._stuckChildren && this._stuckChildren.length)
+			result = result.concat(this._stuckChildren);
 		
 		if(this.children.length)
 		{
 			result = result.concat(this.children);
 		}
-		else
+
+		for (var i = 0; i < this.nodes.length; i++)
 		{
-			if(this.nodes.length)
-			{
-				for (var i = 0; i < this.nodes.length; i++)
-				{
-					result = result.concat(this.nodes[i].retrieveInBounds(bounds));
-				}
-			}
+			result = result.concat(this.nodes[i].retrieveInBounds(bounds));
 		}
 	}
 	
@@ -287,15 +279,7 @@ Node.prototype.retrieveInBounds = function(bounds)
 
 Node.prototype.collidesWith = function (bounds)
 {
-	var b1 = this._bounds;
-	var b2 = bounds;
-
-	return !(
-	        b1.x > (b2.x + b2.width)  || 
-			b2.x > (b1.x + b1.width)  || 
-	        b1.y > (b2.y + b2.height) ||
-	        b2.y > (b1.y + b1.height)
-	   );
+	return QuadTree._boundsOverlap(this._bounds, bounds);
 }
 
 Node.prototype._findIndex = function(item)
@@ -396,6 +380,11 @@ Node.prototype.clear = function()
 	}
 	
 	this.nodes.length = 0;
+}
+
+Node.prototype.getChildren = function()
+{
+	return this.children;
 }
 
 
